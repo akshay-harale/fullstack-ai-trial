@@ -1,6 +1,10 @@
 # Document Editor
 
 This project is a document editor built with React and Express.
+This project is developed using [CLINE]{https://github.com/cline/cline} with VS CODE LM APIS along with gemini-2.0-flash-exp API.
+
+It tooks around 3-4 hours to develop evrything just using prompts. I faced issue at the starting while using <Slate/>. But after giving latest updats to LLM about slate it started working.
+
 
 ## Architecture
 
