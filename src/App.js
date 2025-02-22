@@ -58,24 +58,30 @@ const App = () => {
   const [currentDocumentId, setCurrentDocumentId] = useState(null);
   const [documentTitle, setDocumentTitle] = useState('');
   const [refreshList, setRefreshList] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const editorRef = useRef(null);
 
   const handleDocumentSelect = (documentId, title) => {
     setCurrentDocumentId(documentId);
     setDocumentTitle(title);
+    setIsEditing(true);
   };
 
- const handleNewDocument = () => {
+  const handleNewDocument = () => {
     setCurrentDocumentId(null);
     setDocumentTitle('');
+    setIsEditing(false);
     if (editorRef.current && editorRef.current.resetEditor) {
       editorRef.current.resetEditor();
     }
   };
 
-  const handleDocumentSave = () => {
+  const handleDocumentSave = (savedDocId) => {
     setRefreshList(prev => !prev);
-    handleNewDocument();
+    if (savedDocId) {
+      setCurrentDocumentId(savedDocId);
+      setIsEditing(true);
+    }
   };
 
   const handleDeleteDocument = async () => {
@@ -87,8 +93,7 @@ const App = () => {
         if (response.ok) {
           console.log('Document deleted successfully!');
           setRefreshList(prev => !prev);
-          setCurrentDocumentId(null);
-          setDocumentTitle('');
+          handleNewDocument();
         } else {
           console.error('Failed to delete document:', response.statusText);
         }
@@ -121,12 +126,22 @@ const App = () => {
         <Sidebar>
           <Button
             variant="contained"
-            onClick={handleDocumentSave}
+            onClick={handleNewDocument}
             sx={{ mb: 2, width: '100%' }}
-            startIcon={<SaveIcon />}
           >
             New
           </Button>
+          {currentDocumentId && (
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDeleteDocument}
+              sx={{ width: '100%' }}
+              startIcon={<DeleteIcon />}
+            >
+              Delete
+            </Button>
+          )}
         </Sidebar>
 
         <EditorContainer>

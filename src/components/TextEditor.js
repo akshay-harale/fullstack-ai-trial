@@ -3,15 +3,14 @@ import { createEditor, Transforms, Text, Editor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { styled } from '@mui/system';
-import { Box, Button, TextField, Select, MenuItem, FormControl, InputLabel, IconButton } from '@mui/material';
+import { Box, TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Button } from '@mui/material';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import InsertPhotoIcon from '@mui/icons-material/InsertPhoto';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import SaveIcon from '@mui/icons-material/Save';
 import { useImperativeHandle } from 'react';
 import config from '../config';
 
@@ -30,47 +29,9 @@ const Toolbar = styled(Box)`
   align-items: center;
 `;
 
-const StyledButton = styled(Button)`
-  && {
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    text-transform: none;
-    &:hover {
-      background: #f0f0f0;
-    }
-    &.active {
-      background: #e6e6e6;
-    }
-  }
-`;
-
 const EditorContent = styled(Box)`
   padding: 20px;
   min-height: 300px;
-`;
-
-const SaveButton = styled(StyledButton)`
-  && {
-    margin-left: auto;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    &:hover {
-      background: #45a049;
-    }
-  }
-`;
-
-const DeleteButton = styled(StyledButton)`
-  && {
-    background: #f44336;
-    color: white;
-    border: none;
-    &:hover {
-      background: #d32f2f;
-    }
-  }
 `;
 
 const ImageWrapper = styled('div')`
@@ -169,16 +130,18 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
           children: [{ text: 'Start typing here...' }],
         },
       ]);
+      setTitle('');
     },
     undo: () => editor.undo(),
     redo: () => editor.redo(),
+    handleSave: () => handleSave()
   }));
 
   useEffect(() => {
     if (documentTitle !== title && onTitleChange) {
       onTitleChange(title);
     }
-  }, [title, onTitleChange]);
+  }, [title, documentTitle, onTitleChange]);
 
   useEffect(() => {
     if (!documentId) {
@@ -254,9 +217,10 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
       });
 
       if (response.ok) {
+        const data = await response.json();
         console.log(documentId ? 'Document updated successfully!' : 'New document created!');
         if (onDocumentSave) {
-          onDocumentSave();
+          onDocumentSave(data._id);
         }
       } else {
         console.error('Failed to save document:', response.statusText);
@@ -265,27 +229,6 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
       console.error('Error saving document:', error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!documentId) return;
-
-    try {
-      const response = await fetch(`${config.apiUrl}/documents/${documentId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        console.log('Document deleted successfully!');
-        if (onDocumentSave) {
-          onDocumentSave();
-        }
-      } else {
-        console.error('Failed to delete document:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error deleting document:', error);
     }
   };
 
@@ -402,7 +345,6 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
               e.preventDefault();
               toggleFormat('bold');
             }}
-            className={isFormatActive('bold') ? 'active' : ''}
           >
             <FormatBoldIcon />
           </IconButton>
@@ -411,7 +353,6 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
               e.preventDefault();
               toggleFormat('italic');
             }}
-            className={isFormatActive('italic') ? 'active' : ''}
           >
             <FormatItalicIcon />
           </IconButton>
@@ -420,26 +361,9 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
               e.preventDefault();
               toggleFormat('underline');
             }}
-            className={isFormatActive('underline') ? 'active' : ''}
           >
             <FormatUnderlinedIcon />
           </IconButton>
-          <FormControl sx={{ m: 1, minWidth: 80 }} size="small">
-            <InputLabel id="font-family-label">Font</InputLabel>
-            <Select
-              labelId="font-family-label"
-              id="font-family-select"
-              value=""
-              label="Font"
-            >
-              <MenuItem value="">
-                <em>Arial</em>
-              </MenuItem>
-              <MenuItem value={10}>Ten</MenuItem>
-              <MenuItem value={20}>Twenty</MenuItem>
-              <MenuItem value={30}>Thirty</MenuItem>
-            </Select>
-          </FormControl>
           <IconButton
             onClick={() => editor.undo()}
             aria-label="undo"
@@ -460,14 +384,20 @@ const TextEditor = ({ documentId, documentTitle, onDocumentSave, onTitleChange, 
             id="image-upload"
           />
           <label htmlFor="image-upload">
-            <StyledButton component="span" startIcon={<InsertPhotoIcon />}>Add Image</StyledButton>
+            <IconButton component="span">
+              <InsertPhotoIcon />
+            </IconButton>
           </label>
-          <SaveButton onClick={handleSave} disabled={saving} startIcon={<SaveIcon />}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSave}
+            sx={{ marginLeft: 'auto' }}
+            startIcon={<SaveIcon />}
+            disabled={saving}
+          >
             {saving ? 'Saving...' : (documentId ? 'Save Changes' : 'Save New')}
-          </SaveButton>
-          {documentId && (
-            <DeleteButton onClick={handleDelete} startIcon={<DeleteIcon />}>Delete</DeleteButton>
-          )}
+          </Button>
         </Toolbar>
         <EditorContent>
           <Editable
